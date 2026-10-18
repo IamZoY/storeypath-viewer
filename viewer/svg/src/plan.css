@@ -148,7 +148,9 @@
 .sp-item-overhead .sp-item-body { fill-opacity: 0.3; stroke-dasharray: 3 3; }
 .sp-item-front { stroke: var(--sp-item-front); stroke-width: 2.5; }
 .sp-item-mark { fill: none; stroke: var(--sp-item-mark); stroke-width: 1; }
-.sp-item-view { stroke-dasharray: 3 3; }
+/* the way a camera looks (a screen, a kiosk faces): part of the item, so a click inside it chooses
+   the item rather than the space under it */
+.sp-item-view { stroke-dasharray: 3 3; pointer-events: visible; }
 /* what a camera looks at, out to its range: the chosen camera's, or every one's (coverage) */
 .sp-item-coverage { display: none; fill: var(--sp-coverage); fill-opacity: 0.1; stroke: var(--sp-coverage); stroke-opacity: 0.5;
   stroke-width: 1; stroke-dasharray: 4 3; pointer-events: none; }

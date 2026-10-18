@@ -39,6 +39,9 @@ const CHANGES = new Set(["take", "enter", "leave"]);
 const AROUND: readonly (readonly [number, number])[] = [[1, 0], [-1, 0], [0.7071, -0.7071], [-0.7071, -0.7071], [0.7071, 0.7071],
   [-0.7071, 0.7071], [0, -1], [0, 1]]; // where a route's marker may be set off its point, in order
 const DRAG_PX = 4; // a press that moves less than this is a click
+// a click this near an item (screen pixels) chooses it, not the space under it: a small one (a
+// camera on a site plan) is only a few pixels across
+const ITEM_REACH_PX = 6;
 const ANIMATION_MS = 260;
 const DRAW_MS = 1000; // a way drawing itself in
 const FADE_MS = 320; // one floor fading into the next
@@ -1634,11 +1637,13 @@ export class FloorPlanEngine extends EventTarget {
     return [e.clientX - r.left, e.clientY - r.top];
   }
 
-  private chooseFrom(target: EventTarget | null): void {
+  /** What a click chose: the item, route change or space under it (``at``, the point of
+   * the screen it was at: an item just beside it first, ITEM_REACH_PX). */
+  private chooseFrom(target: EventTarget | null, at?: XY): void {
     const change = target instanceof Element ? target.closest<SVGGElement>("[data-sp-route-change]") : null;
     if (change) return this.changeClicked(change);
     const el = target instanceof Element ? target.closest("[data-sp-id], [data-sp-item]") : null;
-    const item = this.items.get(el?.getAttribute("data-sp-item") ?? "")?.item ?? null;
+    const item = this.items.get(el?.getAttribute("data-sp-item") ?? "")?.item ?? (at ? this.itemNear(at) : null);
     if (item) {
       this.select(item.id);
       this.dispatchEvent(new CustomEvent<SelectDetail>("select", { detail: { id: item.id, space: null, item } }));
@@ -1649,6 +1654,28 @@ export class FloorPlanEngine extends EventTarget {
     if (space && !this.interactive(space)) return;
     this.select(space ? space.id : null);
     this.dispatchEvent(new CustomEvent<SelectDetail>("select", { detail: { id: space?.id ?? null, space, item: null } }));
+  }
+
+  /** The item at a point of the screen, or within ITEM_REACH_PX of its body: the one drawn
+   * last (on top); null when there is none, or items are hidden or not to be chosen. */
+  private itemNear(at: XY): PlanItem | null {
+    if (this.opts.interactiveItems === false || !this.itemsShown) return null;
+    const c = this.cam;
+    const p: XY = [(at[0] - c.tx) / c.k, (at[1] - c.ty) / (this.ySign * c.k)];
+    const reach = ITEM_REACH_PX / c.k;
+    for (const { item: it } of [...this.items.values()].reverse()) {
+      const dx = p[0] - it.at[0], dy = p[1] - it.at[1];
+      const kind = itemKind(it), dome = kind === "camera" && it.mount === "ceiling";
+      if (kind === "ap" || kind === "round" || dome) { // drawn round, at least this big (drawItem)
+        if (Math.hypot(dx, dy) <= Math.max(Math.min(it.width, it.depth) / 2, dome ? 0.15 : 0.3) + reach) return it;
+        continue;
+      }
+      const len = Math.hypot(it.front[0], it.front[1]) || 1;
+      const f: XY = [it.front[0] / len, it.front[1] / len], u: XY = [-f[1], f[0]];
+      const across = dx * u[0] + dy * u[1], along = dx * f[0] + dy * f[1];
+      if (Math.abs(across) <= it.width / 2 + reach && Math.abs(along) <= it.depth / 2 + reach) return it;
+    }
+    return null;
   }
 
   /** A floor change's badge clicked (or Enter on it): the floor it goes to (or comes
@@ -1737,7 +1764,7 @@ export class FloorPlanEngine extends EventTarget {
       const press = this.press;
       this.press = null;
       s.classList.remove("sp-dragging");
-      if (press && !press.moved && e.type === "pointerup") this.chooseFrom(press.target);
+      if (press && !press.moved && e.type === "pointerup") this.chooseFrom(press.target, press.start);
     };
     s.addEventListener("pointerup", end);
     s.addEventListener("pointercancel", end);

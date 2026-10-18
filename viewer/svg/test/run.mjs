@@ -638,7 +638,9 @@ inChrome("draws the items over the spaces and under the labels, each with a mark
       labelsLast: [...document.querySelector(".sp-plan-box").children].indexOf(document.querySelector(".sp-labels").ownerSVGElement)
         > [...document.querySelector(".sp-plan-box").children].indexOf(document.querySelector(".sp-world").ownerSVGElement) };
   });
-  equal(got.layers.indexOf("sp-items"), got.layers.indexOf("sp-containers") + 1, "over the spaces");
+  // over the spaces (and over a layout's footprints, 0.12: drawn over its areas)
+  truly(got.layers.indexOf("sp-items") > Math.max(got.layers.indexOf("sp-containers"), got.layers.indexOf("sp-footprints")),
+    `over the spaces and footprints: ${got.layers}`);
   truly(got.layers.indexOf("sp-items") < got.layers.indexOf("sp-walls") && got.labelsLast, `under the walls and labels: ${got.layers}`);
   // (a desk alone, format 0.10: its chair an item of its own)
   equal([got.items, got.desks, got.chairs, got.sofa, got.tv, got.copier, got.fronts, got.buttons], [9, 4, 0, 1, 1, 1, 8, 9], "drawn");
@@ -766,6 +768,31 @@ inChrome("a click on an item chooses it: a select event with the item", async (p
   await page.run((id) => document.querySelector(`[data-sp-item="${id}"]`).focus(), desk.id);
   await page.key("Enter", "Enter", 13);
   equal(await page.run(() => window.engine.selected), desk.id, "Enter on an item chooses it");
+});
+
+inChrome("a click just beside a small item, or inside the way a camera looks, chooses it, not the space under it", async (page) => {
+  await page.run((p) => window.fresh({}, p), floorFromPackage(hq, `${HQ}-F00`)); // its dome camera
+  const cam = await page.run(() => {
+    const g = document.querySelector(".sp-item-camera"), id = g.dataset.spItem;
+    // (points of the page, as clicks take them)
+    const b = g.querySelector(".sp-item-body").getBoundingClientRect(), v = g.querySelector(".sp-item-view").getBoundingClientRect();
+    const c = [b.left + b.width / 2, b.top + b.height / 2], w = [v.left + v.width / 2, v.top + v.height / 2];
+    const len = Math.hypot(c[0] - w[0], c[1] - w[1]), away = [(c[0] - w[0]) / len, (c[1] - w[1]) / len]; // from the way it looks
+    const beside = (px) => [c[0] + away[0] * (b.width / 2 + px), c[1] + away[1] * (b.width / 2 + px)];
+    const under = ([x, y]) => document.elementFromPoint(x, y)?.closest("[data-sp-item]")?.dataset.spItem ?? null;
+    const near = beside(3), far = beside(24), view = w;
+    return { id, near, far, view, nearUnder: under(near), viewUnder: under(view) };
+  });
+  equal(cam.nearUnder, null, "3 pixels beside it, the space is under the pointer, not the camera");
+  await page.click(...cam.near);
+  equal(await page.run(() => window.engine.selected), cam.id, "a click 3 pixels beside it chooses it");
+  await page.run(() => window.engine.select(null));
+  equal(cam.viewUnder, cam.id, "the way it looks is part of it");
+  await page.click(...cam.view);
+  equal(await page.run(() => window.engine.selected), cam.id, "a click inside the way it looks chooses it");
+  await page.run(() => window.engine.select(null));
+  await page.click(...cam.far);
+  truly(await page.run((id) => window.engine.selected !== id, cam.id), "24 pixels away: not it");
 });
 
 inChrome("items can be hidden, or left out of clicks: then a click chooses the office under them", async (page) => {
