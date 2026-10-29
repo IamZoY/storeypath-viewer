@@ -1452,6 +1452,18 @@ func TestValuesAreThoseTheFormatAllows(t *testing.T) {
 	if problems := untyped.Validate(); len(problems) != 0 {
 		t.Errorf("no types listed: %v", problems)
 	}
+	// (0.13.1) an electrical room and an IDF room are this format's types
+	for _, typ := range []string{"electrical_room", "idf_room"} {
+		edit := func(n string, d []byte) []byte {
+			if n == FileManifest {
+				return editJSON(n, func(doc map[string]any) { delete(doc, "types") })(n, d)
+			}
+			return first(FileSpaces, func(p map[string]any) { p["type"] = typ })(n, d)
+		}
+		if problems := rewriteFrom(t, "simple-office.storeypath", edit).Validate(); len(problems) != 0 {
+			t.Errorf("a space of type %s: %v", typ, problems)
+		}
+	}
 }
 
 func TestAProjectFileIsNotAPackage(t *testing.T) {

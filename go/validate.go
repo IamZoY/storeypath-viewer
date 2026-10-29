@@ -90,7 +90,7 @@ var (
 	roomTypes = []string{"office", "room", "meeting_room", "corridor", "lobby", "elevator", "stairs", "escalator",
 		"ramp", "restroom", "kitchen", "storage", "utility", "shaft", "open_area", "unspecified", "bedroom", "living_room",
 		"dining_room", "bathroom", "dressing_room", "laundry", "prayer_room", "parking", "balcony", "terrace", "open_to_below",
-		"roof"} // (roof: 0.11)
+		"roof", "electrical_room", "idf_room"} // (roof: 0.11; electrical_room, idf_room: 0.13.1)
 	landTypes  = []string{"driveway", "garden", "courtyard", "yard", "path", "gate_area", "road", "pool"}
 	spaceTypes = append(slices.Clone(roomTypes), landTypes...)
 )

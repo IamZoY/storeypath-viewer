@@ -1,4 +1,4 @@
-# StoreyPath package format — version 0.13.0
+# StoreyPath package format — version 0.13.1
 
 A StoreyPath package (`*.storeypath`) describes one building of a project: the
 building, its location, its floors, the spaces on each floor (offices, corridors,
@@ -205,7 +205,10 @@ Space types: `office`, `room`, `meeting_room`, `corridor`, `lobby`, `elevator`,
 `open_area`, `unspecified`, `bedroom`, `living_room`, `dining_room`, `bathroom`
 (private; public toilets are `restroom`), `dressing_room`, `laundry`, `prayer_room`,
 `parking`, `balcony`, `terrace`, `open_to_below` (a void over the floor below), `roof`
-(0.11: the open roof of a building, its deck behind the parapets, on a roof level);
+(0.11: the open roof of a building, its deck behind the parapets, on a roof level),
+`electrical_room` (0.13.1: a room of switchboards and distribution boards) and `idf_room`
+(0.13.1: a floor's telecom room, its racks and patch panels; an intermediate distribution
+frame), which were `utility` before;
 outdoors, a location's land's areas (0.12, Location layouts): `yard` (the plot's open
 ground round its buildings), `driveway`, `garden`, `courtyard` (open ground closed round
 by buildings or walls), `path`, `gate_area` (the ground at a gate), `road` (beyond the
@@ -633,7 +636,7 @@ hidden or ignored in review: `corridor`, `lobby`, `open_area`, `elevator`, `stai
 (spaces to pass through), and `office`, `room`, `meeting_room`, `restroom`,
 `kitchen`, `storage`, `bedroom`, `bathroom`, `dressing_room`, `laundry`,
 `prayer_room`, `unspecified` (spaces a person goes to). Not `utility` (plant and
-electrical rooms), `shaft` or `open_to_below`. A door into what is not walked is not
+technical rooms), `electrical_room`, `idf_room`, `shaft` or `open_to_below`. A door into what is not walked is not
 a node. The zones of a divided space are one room to walk across, as no wall parts
 them (a zone not walked, a void, is left out of it).
 
@@ -834,7 +837,7 @@ building's outside: `WALL-PAINT-WHITE`):
 | `parking` | `FLOOR-EPOXY-GREY` | `WALL-PAINT-WHITE` |
 | `prayer_room` | `FLOOR-CARPET-GREEN` | `WALL-PAINT-WHITE` |
 | `restroom`, `bathroom`, `laundry` | `FLOOR-PORCELAIN-WHITE` | `WALL-TILE-WHITE` |
-| `storage`, `utility`, `shaft`, `unspecified`, `open_to_below`, `roof` | `FLOOR-CONCRETE` | `WALL-PAINT-WHITE` |
+| `storage`, `utility`, `electrical_room`, `idf_room`, `shaft`, `unspecified`, `open_to_below`, `roof` | `FLOOR-CONCRETE` | `WALL-PAINT-WHITE` |
 
 A location's land's areas (0.12: `yard`, `driveway`, `garden`, `courtyard`, `path`, `gate_area`, `road`,
 `pool`) have no finishes and no defaults of their own in 0.12: a reader draws them by their type (a
@@ -1245,6 +1248,16 @@ its building's (by its placement), and say each way in and out of a building.
   3D), when the exporter could build them. Nothing else changes: a reader of 0.4
   read a 0.5 package as it is, ignoring the folder (readers of 0.7 and later refuse a
   newer minor version instead: Versioning).
+
+## Changes from 0.13.0
+
+- Space types `electrical_room` (a room of switchboards and distribution boards) and
+  `idf_room` (a floor's telecom room: an intermediate distribution frame, its racks and patch
+  panels), which were `utility`: not walked, as `utility`, and finished as it by default
+  (`FLOOR-CONCRETE`, `WALL-PAINT-WHITE`).
+- A patch: a reader of 0.13 reads a 0.13.1 package (Versioning): its `manifest.json → types`
+  lists the types it may use, these among them, and a reader finishes a type it does not know
+  as `unspecified` (Finishes).
 
 ## Changes from 0.12
 
