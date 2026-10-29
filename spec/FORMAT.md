@@ -1,4 +1,4 @@
-# StoreyPath package format — version 0.13.1
+# StoreyPath package format — version 0.13.2
 
 A StoreyPath package (`*.storeypath`) describes one building of a project: the
 building, its location, its floors, the spaces on each floor (offices, corridors,
@@ -348,7 +348,8 @@ kept for good and never given to another type (a type no longer used is `retired
 English and Arabic names, a `category` (Categories, below), a size, how
 it is mounted (`floor`, `wall`, `ceiling`), a colour (`#rrggbb`), `workplaces` (how many people work
 at one: a desk, 1; 0 for most else), `grade` (who a desk is for, 0.7), `shape` (how it is
-drawn, 0.9.1: Shapes, below), `model` (its 3D model, 0.9.2: Models, below), and its `fields`. Each field
+drawn, 0.9.1: Shapes, below), `model` (its 3D model, 0.9.2: Models, below), `plan` (its drawing
+seen from above, 0.13.2: Plan drawings, below), and its `fields`. Each field
 says who enters it: `owner: "storeypath"` (what is physical: a colour, a size, a
 model) or `"system"` (the system that manages the asset: an access point's network).
 A reader keeps the `system` fields itself, by the item's ID; the package never
@@ -408,6 +409,26 @@ box stretched or shrunk each way to the item's `width_m` (x), `height_m` (y) and
 model is added, so it is drawn as it was made. The model says only how a type looks in 3D:
 the plan still draws its shape. A reader that cannot read a model (missing, malformed, too
 large) draws the type by its shape, as one of 0.9.1 does.
+
+**Plan drawings (0.13.2).** A type may carry its `plan`: how its items look from above, line
+for line as a drawing has them (a designer's or a supplier's CAD block: that desk set, that
+chair), drawn in place of its shape's symbol. In the type's own frame: metres, its middle
+(the middle of its box) at (0, 0), x across it and y front to back, its front towards −y,
+as an item that is not turned lies on the plan.
+- `plan.lines`: polylines, each a list of `[x, y]` points (at least two; a closed one repeats
+  its first); arcs and circles as the drawing has them, in short straight pieces.
+- `plan.outline` (optional): its footprint, for a 3D reader: a list of polygons, each a list
+  of rings (the first its boundary, any others holes in it: the middle of a ring table), each
+  a list of `[x, y]` points (at least three; the first not repeated).
+
+Every point lies within the type's box (±`width`/2, ±`depth`/2) to 1 mm, and a type's plan
+has at most 50,000 points. An item of the type is drawn as its lines made the item's size
+(each way, as a model is), turned and placed as the item is. In 3D a type with an outline and
+no model is its outline raised: a `desk` or a `table` its top, 4 cm thick at its height, on a
+leg at each corner of its outline (a round one on a pedestal at its middle); anything else its
+outline from its bottom to its top. A plan says only how a type looks: its size, shape and
+code stay what they are, and a reader that does not know `plan` (or finds it malformed)
+draws the type by its shape.
 
 **Kiosks.** An item whose type is `KIOSK`, or `KIOSK-` and more (`KIOSK-WALL`), is
 where a wayfinding kiosk stands: a screen where people type their employee number
@@ -1248,6 +1269,13 @@ its building's (by its placement), and say each way in and out of a building.
   3D), when the exporter could build them. Nothing else changes: a reader of 0.4
   read a 0.5 package as it is, ignoring the folder (readers of 0.7 and later refuse a
   newer minor version instead: Versioning).
+
+## Changes from 0.13.1
+
+- `catalogue.json`: a type's `plan` (Plan drawings): its drawing seen from above, `lines`
+  line for line and an `outline` to raise in 3D, in the type's own frame.
+- A patch: a reader of 0.13 reads a 0.13.2 package (Versioning), drawing each type by its
+  shape as before.
 
 ## Changes from 0.13.0
 
